@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <style>
+        #chat-output {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .user-message {
+            color: blue;
+        }
+        .bot-message {
+            color: green;
+        }
+        .error-message {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chatbot</h1>
+    <form id="chat-form">
+        <input type="text" id="chat-input" placeholder="Type your message here..." required>
+        <button id="chat-btn" type="submit">Send</button>
+    </form>
+    <div id="chat-output"></div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatBtn = document.getElementById('chat-btn');
+        const chatOutput = document.getElementById('chat-output');
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userInput = chatInput.value;
+            
+            // Display user message
+            chatOutput.innerHTML += `<p class="user-message"><strong>You:</strong> ${userInput}</p>`;
+            
+            // Clear input and scroll to bottom
+            chatInput.value = '';
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+            
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response:', text);
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    throw new Error(`Invalid JSON response from server: ${text}`);
+                }
+                console.log('Parsed data:', data);
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                chatOutput.innerHTML += `<p class="bot-message"><strong>Bot:</strong> ${data.response}</p>`;
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                chatOutput.innerHTML += `<p class="error-message"><strong>Error:</strong> ${error.message}</p>`;
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            });
+        });
+    </script>
+</body>
+</html>
